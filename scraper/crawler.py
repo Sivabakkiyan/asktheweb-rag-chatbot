@@ -7,9 +7,10 @@ from scraper.filters import LinkFilter
 class WebsiteCrawler:
     """
     Handles downloading webpages and recursively crawling linked pages.
+    Stays focused on relevant pages only.
     """
 
-    def __init__(self, timeout=10, max_pages=15):
+    def __init__(self, timeout=15, max_pages=10):
         self.timeout = timeout
         self.max_pages = max_pages
         self.visited = set()
@@ -18,7 +19,6 @@ class WebsiteCrawler:
         """
         Download HTML content from a webpage.
         """
-        # Fake browser headers so websites don't block us
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0"
         }
@@ -26,68 +26,59 @@ class WebsiteCrawler:
         response.raise_for_status()
         return response.text
 
-    def crawl(self, start_url, depth=2):
+    def crawl(self, start_url, depth=2, progress_callback=None):
         """
         Recursively crawl pages starting from start_url.
         Returns list of all crawled pages.
         """
-        # Reset visited pages for each new crawl
         self.visited = set()
         all_pages = []
-
-        # Start recursive crawling
-        self._crawl_recursive(start_url, depth, all_pages)
-
+        self._crawl_recursive(start_url, depth, all_pages, progress_callback)
         return all_pages
 
-    def _crawl_recursive(self, url, depth, all_pages):
+    def _crawl_recursive(self, url, depth, all_pages, progress_callback=None):
         """
-        Internal recursive function to crawl pages.
+        Internal recursive function to crawl pages one by one.
         """
-        # Stop if we already visited this page
+        # Stop conditions
         if url in self.visited:
             return
-
-        # Stop if we reached max pages limit
         if len(all_pages) >= self.max_pages:
             return
-
-        # Stop if we reached max depth
         if depth < 0:
             return
 
-        # Mark this page as visited
         self.visited.add(url)
 
         try:
-            print(f"Scraping page {len(all_pages) + 1}: {url}")
+            if progress_callback:
+                progress_callback(f"Scraping page {len(all_pages) + 1}: {url}")
+            else:
+                print(f"Scraping page {len(all_pages) + 1}: {url}")
 
-            # Download and parse page
             html = self.fetch_page(url)
             parser = WebsiteParser()
             page = parser.parse(html, url)
 
-            # Get base domain to stay on same website
             base_domain = urlparse(url).netloc
-
-            # Filter links
             link_filter = LinkFilter()
-            valid_links = []
 
+            valid_links = []
             for link in page["links"]:
                 if link_filter.is_valid_link(link, base_domain):
                     valid_links.append(link)
 
-            page["links"] = valid_links
-
-            # Add page to results
+            # Only keep first 5 links to stay focused
+            page["links"] = valid_links[:10]
             all_pages.append(page)
 
-            # Follow links recursively
-            for link in valid_links:
+            # Follow links one by one
+            for link in page["links"]:
                 if len(all_pages) >= self.max_pages:
                     break
-                self._crawl_recursive(link, depth - 1, all_pages)
+                self._crawl_recursive(
+                    link, depth - 1, all_pages, progress_callback
+                )
 
         except Exception as e:
             print(f"Could not scrape {url}: {e}")
