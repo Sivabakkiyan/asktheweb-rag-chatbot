@@ -1,30 +1,32 @@
 from scraper.crawler import WebsiteCrawler
-from scraper.parser import WebsiteParser
 from utils.url_utils import normalize_url
 
 
 def main():
 
     print("=" * 60)
-    print("        AskTheWeb - RAG Powered Website Chatbot")
+    print("          AskTheWeb - RAG Powered Website Chatbot")
     print("=" * 60)
-
-    url = input("\nEnter Website URL: ").strip()
-
-    crawler = WebsiteCrawler()
-    parser = WebsiteParser()
 
     try:
 
-        html = crawler.fetch_page(url)
+        url = normalize_url(input("\nEnter Website URL: "))
 
-        page = parser.parse(html, url)
+        crawler = WebsiteCrawler()
 
-        print("\n✅ Website fetched successfully!\n")
+        pages = crawler.crawl(url)
 
-        print(f"Title       : {page['title']}")
-        print(f"Text Length : {len(page['text'])} characters")
-        print(f"Links Found : {len(page['links'])}")
+        print("\n✅ Website crawled successfully!\n")
+
+        print(f"Total Pages Crawled : {len(pages)}")
+
+        for index, page in enumerate(pages, start=1):
+
+            print("-" * 60)
+            print(f"Page {index}")
+            print(f"Title       : {page['title']}")
+            print(f"Text Length : {len(page['text'])} characters")
+            print(f"Valid Links : {len(page['links'])}")
 
     except Exception as e:
 

@@ -21,3 +21,7 @@ Thumbs.db
 # Generated Files
 website_content.txt
 chunks.txt
+# Generated Data
+data/raw/*.json
+data/chunks/
+data/vectorstore/

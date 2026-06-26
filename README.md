@@ -2,21 +2,48 @@
 
 ## Overview
 
-AskTheWeb is an AI-powered Retrieval-Augmented Generation (RAG) chatbot that can learn from any website. It recursively crawls website pages, extracts relevant content, builds a searchable knowledge base, and answers user questions with accurate, source-backed responses.
+AskTheWeb is a Retrieval-Augmented Generation (RAG) project that allows users to chat with the content of any website.
+
+The project is being developed in phases. The current implementation focuses on building a clean and modular website ingestion pipeline that will later power the RAG system.
 
 ---
 
-## Features
+## Current Features
 
-- Recursive website crawling
-- Intelligent content extraction
-- Text chunking
-- Vector embeddings
-- FAISS vector database
-- Semantic retrieval
-- AI-powered question answering
-- Source citations
-- Fast response generation
+- Modular project architecture
+- Website URL normalization
+- HTML page fetching using Requests
+- HTML parsing using BeautifulSoup
+- Title extraction
+- Clean text extraction
+- Internal link extraction
+- Smart link filtering
+- Structured page representation
+
+---
+
+## Project Structure
+
+```
+AskTheWeb/
+│
+├── app.py
+├── scraper/
+│   ├── crawler.py
+│   ├── parser.py
+│   └── filters.py
+│
+├── utils/
+│   └── url_utils.py
+│
+├── rag/
+├── data/
+├── docs/
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
 
 ---
 
@@ -25,15 +52,32 @@ AskTheWeb is an AI-powered Retrieval-Augmented Generation (RAG) chatbot that can
 - Python
 - Requests
 - BeautifulSoup4
-- LangChain
-- Google Gemini
-- FAISS
-- Streamlit
 
 ---
 
-## Project Status
+## Current Status
 
-🚧 Project initialization completed.
+✅ Phase 1 Completed
 
-Development is currently in progress.
+The project can:
+
+- Fetch a website
+- Parse its HTML
+- Extract clean text
+- Extract valid internal links
+- Return structured webpage data
+
+---
+
+## Upcoming Phases
+
+- Recursive website crawling
+- Knowledge base generation
+- Text chunking
+- Embedding generation
+- FAISS vector database
+- Semantic retrieval
+- Gemini integration
+- Grok fallback
+- Streamlit chat interface
+- Source citations
