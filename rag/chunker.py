@@ -6,7 +6,7 @@ class TextChunker:
     Splits large text into smaller overlapping chunks for RAG processing.
     """
 
-    def __init__(self, chunk_size=1000, chunk_overlap=200):
+    def __init__(self, chunk_size=2000, chunk_overlap=200):
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap

@@ -10,7 +10,7 @@ class WebsiteCrawler:
     Stays focused on relevant pages only.
     """
 
-    def __init__(self, timeout=15, max_pages=10):
+    def __init__(self, timeout=15, max_pages=3):
         self.timeout = timeout
         self.max_pages = max_pages
         self.visited = set()

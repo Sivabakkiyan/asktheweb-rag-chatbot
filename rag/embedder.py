@@ -1,5 +1,5 @@
 import os
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
 
@@ -9,23 +9,21 @@ load_dotenv()
 class Embedder:
     """
     Converts text chunks into embeddings and stores them in FAISS.
+    Uses HuggingFace local embeddings - no API quota needed.
     """
 
     def __init__(self):
-        # Load Google embeddings using Gemini API key
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/embedding-001",
-            google_api_key=os.getenv("GEMINI_API_KEY")
+        # Free local embeddings - runs on your laptop, no quota limit
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="all-MiniLM-L6-v2"
         )
 
     def build_vectorstore(self, chunks):
         """
         Takes list of chunks and builds a FAISS vector store.
         """
-        # Extract just the text from each chunk
         texts = [chunk["text"] for chunk in chunks]
 
-        # Extract source info for each chunk
         metadatas = [
             {
                 "source": chunk["source"],
@@ -36,7 +34,6 @@ class Embedder:
 
         print("Building FAISS index... please wait")
 
-        # Create FAISS vector store
         vectorstore = FAISS.from_texts(
             texts,
             embedding=self.embeddings,
@@ -49,7 +46,7 @@ class Embedder:
 
     def save_vectorstore(self, vectorstore, path="data/faiss_index"):
         """
-        Save FAISS index to disk so we don't rebuild every time.
+        Save FAISS index to disk.
         """
         vectorstore.save_local(path)
         print(f"FAISS index saved to {path}")

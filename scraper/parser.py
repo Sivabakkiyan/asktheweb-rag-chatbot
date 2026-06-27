@@ -9,37 +9,31 @@ class WebsiteParser:
 
     def parse(self, html, base_url):
         """
-        Parse the HTML and return structured webpage data.
+        Parse HTML and return structured webpage data.
         """
 
         soup = BeautifulSoup(html, "html.parser")
 
-        # -------------------------
-        # Extract Page Title
-        # -------------------------
-        if soup.title:
-            title = soup.title.get_text(strip=True)
-        else:
-            title = "No Title Found"
+        # Extract page title
+        title = (
+            soup.title.get_text(strip=True)
+            if soup.title
+            else "No Title Found"
+        )
 
-        # -------------------------
-        # Extract Clean Text
-        # -------------------------
+        # Extract clean text
         text = soup.get_text(separator=" ", strip=True)
 
-        # -------------------------
-        # Extract Links
-        # -------------------------
+        # Extract links
         links = []
 
-        for link in soup.find_all("a", href=True):
-            full_url = urljoin(base_url, link["href"])
+        for tag in soup.find_all("a", href=True):
+            full_url = urljoin(base_url, tag["href"])
             links.append(full_url)
 
-        # -------------------------
-        # Return Structured Data
-        # -------------------------
+        # Return structured page
         return {
+            "url": base_url,
             "title": title,
             "text": text,
             "links": links

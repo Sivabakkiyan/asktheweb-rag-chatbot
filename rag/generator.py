@@ -8,7 +8,9 @@ load_dotenv()
 
 class AnswerGenerator:
     """
-    Generates answers using Gemini as primary and Groq as backup.
+    Generates answers using Groq as primary and Gemini as backup.
+    Groq has 14,400 requests/day free limit.
+    Gemini has only 20 requests/day free limit.
     """
 
     def __init__(self):
@@ -37,28 +39,15 @@ Give a clear and accurate answer. Mention which source the information came from
 
     def generate(self, question, chunks):
         """
-        Generate answer using Gemini first, Groq as backup.
+        Generate answer using Groq first, Gemini as backup.
         """
         prompt = self.build_prompt(question, chunks)
 
-        # Try Gemini first
-        try:
-            genai.configure(api_key=self.gemini_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(prompt)
-            return {
-                "answer": response.text,
-                "model_used": "Gemini"
-            }
-
-        except Exception as e:
-            print(f"Gemini failed: {e}. Switching to Groq...")
-
-        # Backup - Try Groq
+        # Try Groq first (14,400 requests/day free)
         try:
             client = Groq(api_key=self.groq_key)
             response = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama-3.1-8b-instant",
                 messages=[{"role": "user", "content": prompt}]
             )
             return {
@@ -67,6 +56,20 @@ Give a clear and accurate answer. Mention which source the information came from
             }
 
         except Exception as e:
+            print(f"Groq failed: {e}. Switching to Gemini...")
+
+        # Backup - Try Gemini (20 requests/day free)
+        try:
+            genai.configure(api_key=self.gemini_key)
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            response = model.generate_content(prompt)
+            return {
+                "answer": response.text,
+                "model_used": "Gemini"
+            }
+
+        except Exception as e:
+            print(f"Gemini failed: {e}")
             return {
                 "answer": "Both AI services are unavailable. Please try again later.",
                 "model_used": "None"
