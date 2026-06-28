@@ -37,72 +37,89 @@ with st.sidebar:
 
     load_button = st.button("🚀 Load Website", use_container_width=True)
 
-    if load_button and url_input:
-        try:
-            url = normalize_url(url_input)
+    if load_button:
+        # Check empty URL
+        if not url_input.strip():
+            st.warning("⚠️ Please enter a URL first!")
+        else:
+            try:
+                # Validate and normalize URL
+                url = normalize_url(url_input)
 
-            # Progress bar
-            progress = st.progress(0)
-            status = st.empty()
+                # Progress bar
+                progress = st.progress(0)
+                status = st.empty()
 
-            # Scraping
-            status.text("🔄 Scraping website...")
-            progress.progress(20)
+                # Scraping
+                status.text("🔄 Scraping website...")
+                progress.progress(20)
 
-            crawler = WebsiteCrawler()
+                crawler = WebsiteCrawler()
 
-            def update_progress(msg):
-                status.text(msg)
+                def update_progress(msg):
+                    status.text(msg)
 
-            pages = crawler.crawl(url, progress_callback=update_progress)
+                pages = crawler.crawl(url, progress_callback=update_progress)
 
-            if len(pages) == 0:
-                st.error("❌ Could not scrape this website. Please try another URL.")
-            else:
-                progress.progress(50)
-                status.text("🔄 Creating chunks...")
+                if len(pages) == 0:
+                    st.error("❌ Could not scrape this website. The site may be blocking scrapers. Please try another URL.")
+                else:
+                    progress.progress(50)
+                    status.text("🔄 Creating chunks...")
 
-                # Chunking
-                chunker = TextChunker()
-                chunks = chunker.chunk_pages(pages)
+                    # Chunking
+                    chunker = TextChunker()
+                    chunks = chunker.chunk_pages(pages)
 
-                progress.progress(70)
-                status.text("🔄 Building FAISS index...")
+                    # Check if chunks are empty
+                    if len(chunks) == 0:
+                        st.error("❌ No readable content found on this website. Please try another URL.")
+                    else:
+                        progress.progress(70)
+                        status.text("🔄 Building FAISS index...")
 
-                # Embeddings
-                embedder = Embedder()
-                vectorstore = embedder.build_vectorstore(chunks)
+                        # Embeddings
+                        embedder = Embedder()
+                        vectorstore = embedder.build_vectorstore(chunks)
 
-                progress.progress(100)
-                status.text("✅ Website loaded successfully!")
+                        progress.progress(100)
+                        status.text("✅ Website loaded successfully!")
 
-                # Save to session
-                st.session_state.vectorstore = vectorstore
-                st.session_state.urls_loaded.append(url)
+                        # Save to session
+                        st.session_state.vectorstore = vectorstore
+                        st.session_state.urls_loaded.append(url)
 
-                st.success(f"✅ Loaded {len(pages)} pages and {len(chunks)} chunks!")
-
-                # Auto generate website summary
-                with st.spinner("Generating website summary..."):
-                    summary_chunks = chunker.chunk_pages(pages[:2])[:3]
-                    if summary_chunks:
-                        generator = AnswerGenerator()
-                        summary_result = generator.generate(
-                            "Give a brief 3-4 line summary of what this website is about.",
-                            summary_chunks
+                        st.success(
+                            f"✅ Loaded {len(pages)} pages and {len(chunks)} chunks!"
                         )
-                        st.info(f"📋 **Website Summary:** {summary_result['answer']}")
 
-                        # Auto suggest questions
-                        with st.spinner("Generating suggested questions..."):
-                            questions_result = generator.generate(
-                                "Based on the content, suggest exactly 3 interesting questions a user might ask. Return only the 3 questions as a numbered list.",
-                                summary_chunks
-                            )
-                            st.success(f"💡 **Suggested Questions:**\n{questions_result['answer']}")
+                        # Auto generate website summary
+                        with st.spinner("Generating website summary..."):
+                            summary_chunks = chunker.chunk_pages(pages[:2])[:3]
+                            if summary_chunks:
+                                generator = AnswerGenerator()
+                                summary_result = generator.generate(
+                                    "Give a brief 3-4 line summary of what this website is about.",
+                                    summary_chunks
+                                )
+                                st.info(
+                                    f"📋 **Website Summary:** {summary_result['answer']}"
+                                )
 
-        except Exception as e:
-            st.error(f"❌ Error: {e}")
+                                # Auto suggest questions
+                                with st.spinner("Generating suggested questions..."):
+                                    questions_result = generator.generate(
+                                        "Based on the content, suggest exactly 3 interesting questions a user might ask. Return only the 3 questions as a numbered list.",
+                                        summary_chunks
+                                    )
+                                    st.success(
+                                        f"💡 **Suggested Questions:**\n{questions_result['answer']}"
+                                    )
+
+            except ValueError as e:
+                st.error(f"⚠️ {e}")
+            except Exception as e:
+                st.error(f"❌ Something went wrong: {e}")
 
     # Show loaded URLs
     if st.session_state.urls_loaded:
@@ -128,46 +145,52 @@ else:
             st.write(chat["question"])
         with st.chat_message("assistant"):
             st.write(chat["answer"])
-            st.caption(f"📄 Source: {chat['source']} | 🤖 Model: {chat['model']}")
+            st.caption(
+                f"📄 Source: {chat['source']} | 🤖 Model: {chat['model']}"
+            )
 
     # Chat input
     question = st.chat_input("Ask anything about the loaded website...")
 
     if question:
-        with st.chat_message("user"):
-            st.write(question)
+        # Block empty or very short questions
+        if len(question.strip()) < 3:
+            st.warning("⚠️ Please enter a valid question!")
+        else:
+            with st.chat_message("user"):
+                st.write(question)
 
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                # Retrieve chunks
-                retriever = Retriever(st.session_state.vectorstore)
-                chunks = retriever.get_relevant_chunks(question)
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    # Retrieve chunks
+                    retriever = Retriever(st.session_state.vectorstore)
+                    chunks = retriever.get_relevant_chunks(question)
 
-                # Generate answer
-                generator = AnswerGenerator()
-                result = generator.generate(question, chunks)
+                    # Generate answer
+                    generator = AnswerGenerator()
+                    result = generator.generate(question, chunks)
 
-                answer = result["answer"]
-                model_used = result["model_used"]
-                source = chunks[0]["source"] if chunks else "Unknown"
-                confidence = chunks[0]["confidence"] if chunks else 0
+                    answer = result["answer"]
+                    model_used = result["model_used"]
+                    source = chunks[0]["source"] if chunks else "Unknown"
+                    confidence = chunks[0]["confidence"] if chunks else 0
 
-                st.write(answer)
-                st.caption(
-                    f"📄 Source: {source} | "
-                    f"🤖 Model: {model_used} | "
-                    f"📊 Confidence: {confidence}%"
-                )
+                    st.write(answer)
+                    st.caption(
+                        f"📄 Source: {source} | "
+                        f"🤖 Model: {model_used} | "
+                        f"📊 Confidence: {confidence}%"
+                    )
 
-        # Save to chat history
-        st.session_state.chat_history.append({
-            "question": question,
-            "answer": answer,
-            "source": source,
-            "model": model_used
-        })
+            # Save to chat history
+            st.session_state.chat_history.append({
+                "question": question,
+                "answer": answer,
+                "source": source,
+                "model": model_used
+            })
 
-    # Export section - shown below chat after all questions
+    # Export section
     if len(st.session_state.chat_history) > 0:
         st.divider()
         st.markdown("### 📥 Export Chat History")
@@ -202,27 +225,23 @@ else:
                 pdf.set_margins(15, 15, 15)
                 pdf.set_auto_page_break(auto=True, margin=15)
 
-                # Title
                 pdf.set_font("Helvetica", style="B", size=14)
                 pdf.cell(0, 10, text="AskTheWeb - Chat History", ln=True)
                 pdf.ln(5)
 
                 for i, chat in enumerate(current_history):
-                    # Question
                     pdf.set_font("Helvetica", style="B", size=11)
                     q_clean = f"Q{i+1}: {chat['question']}".encode(
                         'latin-1', 'replace').decode('latin-1')
                     pdf.multi_cell(0, 8, text=q_clean)
                     pdf.ln(2)
 
-                    # Answer
                     pdf.set_font("Helvetica", size=10)
                     a_clean = f"A: {chat['answer']}".encode(
                         'latin-1', 'replace').decode('latin-1')
                     pdf.multi_cell(0, 8, text=a_clean)
                     pdf.ln(2)
 
-                    # Source
                     pdf.set_font("Helvetica", style="I", size=9)
                     s_clean = f"Source: {chat['source']}".encode(
                         'latin-1', 'replace').decode('latin-1')
