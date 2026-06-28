@@ -9,7 +9,7 @@
 
 AskTheWeb lets you have a conversation with any website. You paste a URL, the app reads through the pages, builds a knowledge base from the content, and then answers your questions accurately — with sources.
 
-No hallucination. No guessing. Every answer comes directly from the website you loaded.
+Grounds every answer in the retrieved website content and provides source citations.
 
 ---
 
@@ -87,6 +87,19 @@ Chunks + question sent to Groq (or Gemini if Groq fails)
 
 Answer returned with source URL and confidence score
 ---
+# Architecture
+
+![AskTheWeb Architecture](docs/architecture.png)
+
+---
+## Screenshots
+
+### Home screen
+![Home](docs/screenshot1.png)
+
+### Chat in action
+![Chat](docs/screenshot2.png)
+
 
 ## Project structure
 AskTheWeb/
@@ -198,8 +211,8 @@ Open `http://localhost:8501` in your browser.
 
 | Service | Free limit | Role |
 |---------|-----------|------|
-| Groq | 14,400 requests/day | Primary AI |
-| Gemini | 20 requests/day | Automatic backup |
+| Groq | Generous free tier | Primary AI |
+| Gemini | Free tier | Automatic backup |
 | HuggingFace embeddings | Unlimited | Runs locally |
 
 ---
