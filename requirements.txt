@@ -4,8 +4,11 @@ langchain
 langchain-text-splitters
 langchain-google-genai
 langchain-community
+langchain-huggingface
 faiss-cpu
 google-generativeai
 groq
 streamlit
 python-dotenv
+fpdf2
+sentence-transformers
