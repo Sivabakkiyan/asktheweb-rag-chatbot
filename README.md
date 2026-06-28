@@ -85,7 +85,8 @@ Chunks + question sent to Groq (or Gemini if Groq fails)
 
 ↓
 
-Answer returned with source URL and confidence score
+Answers returned with source URL and confidence score
+
 ---
 # Architecture
 
