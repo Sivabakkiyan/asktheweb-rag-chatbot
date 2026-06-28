@@ -1,136 +1,170 @@
 # AskTheWeb 🌐
-### Ask anything. Get answers directly from any website using RAG.
+**Ask anything. Get answers directly from any website.**
+
+🚀 **Live Demo** → [https://asktheweb-rag-chatbot-2.streamlit.app](https://asktheweb-rag-chatbot-2.streamlit.app)
 
 ---
 
-## Overview
+## What is this?
 
-AskTheWeb is a Retrieval-Augmented Generation (RAG) powered chatbot that allows users to chat with the content of any website. Simply provide a URL, and the app scrapes the website, builds a knowledge base, and answers your questions accurately based on the actual content.
+AskTheWeb lets you have a conversation with any website. You paste a URL, the app reads through the pages, builds a knowledge base from the content, and then answers your questions accurately — with sources.
+
+No hallucination. No guessing. Every answer comes directly from the website you loaded.
+
+---
+
+## Why I built it this way
+
+Most RAG chatbots stop at one page. AskTheWeb recursively follows links and reads multiple pages automatically, so you get a much richer knowledge base to work with.
+
+I also wanted it to never go down during a demo. So I connected two AI models — Groq as the primary (14,400 free requests/day) and Gemini as the automatic fallback. If one fails, the other takes over silently.
+
+---
+
+## Live Demo
+
+👉 [Try it here](https://asktheweb-rag-chatbot-2.streamlit.app)
+
+Load any public website URL and start asking questions. Try it with:
+- `https://en.wikipedia.org/wiki/Cricket`
+- `https://en.wikipedia.org/wiki/Artificial_intelligence`
+- Any company's about page or documentation site
 
 ---
 
 ## Features
 
-- 🔗 **Multi-URL Support** — Load multiple websites at once
-- 🕷️ **Recursive Web Scraping** — Crawls the given URL and linked pages automatically
-- 🧠 **RAG Pipeline** — Retrieves most relevant content before answering
-- ⚡ **Fast Vector Search** — Uses FAISS for millisecond-level chunk retrieval
-- 🤖 **Dual AI Support** — Groq (primary) and Gemini (backup) for reliability
-- 📄 **Source Citations** — Every answer shows which page it came from
-- 📊 **Confidence Score** — Shows how relevant the retrieved content is
-- 💬 **Chat History** — Remembers all questions and answers in the session
-- 🛡️ **Robust Error Handling** — Handles broken URLs, blocked sites, empty pages gracefully
-- 🎨 **Clean Streamlit UI** — Simple and professional chat interface
+- Recursive web crawling — follows internal links automatically
+- Smart link filtering — skips login pages, social links, irrelevant pages
+- Chunking with overlap — preserves context across chunk boundaries
+- FAISS vector search — finds the most relevant content in milliseconds
+- Dual AI setup — Groq (LLaMA 3.1) primary, Gemini 2.5 Flash backup
+- Auto website summary — generated the moment you load a URL
+- Suggested questions — AI suggests what you might want to ask
+- Source citations — every answer shows exactly which page it came from
+- Confidence score — shows how relevant the retrieved content is
+- Chat export — download your conversation as TXT or PDF
+- Full error handling — invalid URLs, blocked sites, empty pages all handled cleanly
 
 ---
 
-## Project Structure
+## How it works
+User pastes a URL
+
+↓
+
+Crawler fetches the page and follows internal links (up to 10 pages)
+
+↓
+
+HTML is parsed and cleaned into plain text
+
+↓
+
+Text is split into overlapping chunks of 1000 words
+
+↓
+
+HuggingFace embeddings convert each chunk into a vector
+
+↓
+
+All vectors stored in a local FAISS index
+
+↓
+
+User asks a question
+
+↓
+
+Question converted to vector → FAISS finds top 3 matching chunks
+
+↓
+
+Chunks + question sent to Groq (or Gemini if Groq fails)
+
+↓
+
+Answer returned with source URL and confidence score
+---
+
+## Project structure
 AskTheWeb/
 
 │
 
-├── app.py                  → Main Streamlit chat application
+├── app.py                  — Streamlit UI and app logic
 
 │
 
 ├── scraper/
 
-│   ├── crawler.py          → Recursive web crawler
+│   ├── crawler.py          — Recursive web crawler
 
-│   ├── parser.py           → HTML parser and text extractor
+│   ├── parser.py           — HTML parser and text extractor
 
-│   └── filters.py          → Smart link filter
+│   └── filters.py          — Link filter (skips useless pages)
 
 │
 
 ├── rag/
 
-│   ├── chunker.py          → Text chunking with overlap
+│   ├── chunker.py          — Splits text into overlapping chunks
 
-│   ├── embedder.py         → HuggingFace embeddings + FAISS storage
+│   ├── embedder.py         — HuggingFace embeddings + FAISS index
 
-│   ├── retriever.py        → Semantic chunk retrieval
+│   ├── retriever.py        — Semantic search over stored chunks
 
-│   └── generator.py        → AI answer generation (Groq + Gemini)
+│   └── generator.py        — Groq + Gemini answer generation
 
 │
 
 ├── utils/
 
-│   ├── url_utils.py        → URL normalization
+│   ├── url_utils.py        — URL normalization and validation
 
-│   └── file_utils.py       → File save/load utilities
+│   └── file_utils.py       — File save and load helpers
 
 │
 
-├── data/                   → FAISS index storage
+├── data/                   — FAISS index storage (local)
 
-├── docs/                   → Documentation
+├── requirements.txt        — Python dependencies
 
-├── requirements.txt        → Python dependencies
+├── .gitignore              — Excludes .env, venv, cache files
 
-├── .gitignore              → Git ignore rules
-
-└── README.md               → Project documentation
+└── README.md
 ---
 
-## Tech Stack
+## Tech stack
 
-|Tool                    |Purpose                         |
-|----------------------- |------------------------------- |
-| Python                 | Core language                  |
-| Streamlit              | Chat UI                        |
-| Requests               | Fetch web pages                |
-| BeautifulSoup4         | Parse HTML                     |
-| LangChain              | Text chunking                  |
-| HuggingFace Embeddings | Convert text to vectors        |
-| FAISS                  | Fast vector storage and search |
-| Groq (LLaMA 3.1)       | Primary AI model               |
-| Gemini 2.5 Flash       | Backup AI model                |
-| python-dotenv          | Secure API key management      |
+| Layer | Tool | Why |
+|-------|------|-----|
+| UI | Streamlit | Fast to build, easy to demo |
+| Scraping | Requests + BeautifulSoup4 | Lightweight, reliable |
+| Chunking | LangChain RecursiveTextSplitter | Preserves paragraph context |
+| Embeddings | HuggingFace all-MiniLM-L6-v2 | Free, runs locally, no quota |
+| Vector DB | FAISS | Millisecond search, no server needed |
+| Primary AI | Groq (LLaMA 3.1 8B) | 14,400 free requests/day, very fast |
+| Backup AI | Gemini 2.5 Flash | Auto fallback when Groq fails |
+| PDF Export | fpdf2 | Lightweight PDF generation |
+| Config | python-dotenv | Keeps API keys out of code |
 
 ---
 
-## How It Works
-User enters a website URL
+## Setup and run locally
 
-↓
-App scrapes the page and follows internal links (up to 10 pages)
-
-↓
-All text is split into overlapping chunks (1000 words each)
-
-↓
-Chunks are converted to vectors using HuggingFace embeddings
-
-↓
-Vectors stored in FAISS index for fast search
-
-↓
-User asks a question
-
-↓
-Question converted to vector → FAISS finds top 3 relevant chunks
-
-↓
-Chunks + question sent to Groq (or Gemini as backup)
-
-↓
-AI generates accurate answer with source citation
----
-
-## Setup Instructions
-
-### 1. Clone the repository
+### 1. Clone the repo
 ```bash
-git clone https://github.com/Sivabakkiyan/AskTheWeb.git
-cd AskTheWeb
+git clone https://github.com/Sivabakkiyan/asktheweb-rag-chatbot.git
+cd asktheweb-rag-chatbot
 ```
 
 ### 2. Create virtual environment
 ```bash
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Mac/Linux
 ```
 
 ### 3. Install dependencies
@@ -138,60 +172,45 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Create `.env` file
-GEMINI_API_KEY=your_gemini_api_key_here
+### 4. Add API keys
+Create a `.env` file in the root folder:
 
-GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_key
 
-GOOGLE_API_KEY=your_gemini_api_key_here
-### 5. Run the app
+GROQ_API_KEY=your_groq_key
+
+GOOGLE_API_KEY=your_gemini_key
+
+Get your free keys:
+- Groq → [console.groq.com](https://console.groq.com) (14,400 requests/day)
+- Gemini → [aistudio.google.com](https://aistudio.google.com) (backup)
+
+### 5. Run
 ```bash
 streamlit run app.py
 ```
 
----
-
-## Usage
-
-1. Open the app in browser at `http://localhost:8501`
-2. Enter any website URL in the sidebar
-3. Click **Load Website**
-4. Wait for scraping and indexing to complete
-5. Ask any question about the website content
-6. Get accurate answers with source citations!
+Open `http://localhost:8501` in your browser.
 
 ---
 
-## API Keys
+## API limits
 
-| API        | Where to Get       | Free Limit          |
-|-----       |-------------       |------------         |
-| Groq API   | console.groq.com   | 14,400 requests/day |
-| Gemini API | aistudio.google.com| 20 requests/day     |
-
----
-
-## Solution Approach
-
-The project uses a RAG (Retrieval Augmented Generation) architecture:
-
-- **Scraping** — BeautifulSoup4 recursively crawls websites staying within the same domain
-- **Chunking** — LangChain splits text into 1000-word chunks with 200-word overlap to preserve context
-- **Embedding** — HuggingFace `all-MiniLM-L6-v2` model converts chunks to semantic vectors locally (no API needed)
-- **Retrieval** — FAISS finds the top 3 most semantically similar chunks for any question
-- **Generation** — Groq (LLaMA 3.1) generates accurate answers using only retrieved content
-- **Fallback** — If Groq fails, Gemini 2.5 Flash automatically takes over
+| Service | Free limit | Role |
+|---------|-----------|------|
+| Groq | 14,400 requests/day | Primary AI |
+| Gemini | 20 requests/day | Automatic backup |
+| HuggingFace embeddings | Unlimited | Runs locally |
 
 ---
 
-## Status
+## What I learned building this
 
-✅ Phase 1 — Web scraping pipeline completed
+Getting recursive crawling right was harder than expected — Wikipedia alone has thousands of internal links, so without proper depth and page limits the crawler would run forever. The fix was limiting to 2 levels deep and capping at 10 pages, while filtering out navigation, login, and irrelevant links.
 
-✅ Phase 2 — Recursive crawling with smart link filtering
+The embedding quota issue with Gemini taught me to always have a local fallback — HuggingFace's `all-MiniLM-L6-v2` runs entirely on your machine, so there is no quota to hit.
 
-✅ Phase 3 — Text chunking and FAISS vector storage
+The dual AI setup came from a real problem during testing — Gemini's free tier has a 20 request/day limit which ran out quickly. Groq solved this with its much more generous free tier, and keeping Gemini as a silent backup means the app never goes down.
 
-✅ Phase 4 — AI integration with Groq and Gemini fallback
+---
 
-✅ Phase 5 — Streamlit chat UI with source citations and confidence scores
